@@ -37,6 +37,44 @@ public enum Theme {
 
         /// The wash that dims content behind a modal.
         public static let scrim = Color.black.opacity(Theme.Opacity.scrim)
+        /// The wash over the board while it shows a message.
+        public static let boardOverlay = Color.black.opacity(Theme.Opacity.boardOverlay)
+
+        /// The fill of a tile holding a value.
+        ///
+        /// Values past the palette share the accent, so a tile never goes
+        /// without a color however long the game runs.
+        public static func tile(_ value: Int) -> Color {
+            tilePalette[value] ?? accent
+        }
+
+        /// Content on top of `tile(_:)`.
+        public static func onTile(_ value: Int) -> Color {
+            guard tilePalette[value] != nil else { return onAccent }
+            return value <= 4 ? rgb(0x776E65) : .white
+        }
+
+        private static let tilePalette: [Int: Color] = [
+            2: rgb(0xEEE4DA),
+            4: rgb(0xEDE0C8),
+            8: rgb(0xF2B179),
+            16: rgb(0xF59563),
+            32: rgb(0xF67C5F),
+            64: rgb(0xF65E3B),
+            128: rgb(0xEDCF72),
+            256: rgb(0xEDCC61),
+            512: rgb(0xEDC850),
+            1024: rgb(0xEDC53F),
+            2048: rgb(0xEDC22E),
+        ]
+
+        private static func rgb(_ hex: UInt32) -> Color {
+            Color(
+                red: Double((hex >> 16) & 0xFF) / 255,
+                green: Double((hex >> 8) & 0xFF) / 255,
+                blue: Double(hex & 0xFF) / 255
+            )
+        }
     }
 
     /// Text styles.
@@ -47,6 +85,8 @@ public enum Theme {
         public static let headline = Font.system(.title2, design: .rounded).weight(.bold)
         /// A number that changes, such as the score.
         public static let score = Font.system(.title3, design: .rounded).weight(.bold).monospacedDigit()
+        /// The value of a tile. Shrinks to fit its cell.
+        public static let tile = Font.system(size: 34, weight: .heavy, design: .rounded)
         /// The title of a button.
         public static let button = Font.system(.body, design: .rounded).weight(.semibold)
         /// Supporting text.
@@ -107,6 +147,15 @@ public enum Theme {
         public static let tileSlideDuration: Double = 0.12
         /// A tile moving to another cell.
         public static let tileSlide = Animation.easeOut(duration: tileSlideDuration)
+        /// A new tile growing into its cell, once the others have slid.
+        public static let tileAppear = Animation.easeOut(duration: 0.15)
+        /// A merged tile popping into its cell, overshooting slightly.
+        public static let tileMerge = Animation.spring(response: 0.2, dampingFraction: 0.6)
+        /// A tile that merged away leaving the board.
+        public static let tileVanish = Animation.linear(duration: 0.06)
+        /// The time a move takes to play out, from the start of the slide to
+        /// the end of the merge, in seconds.
+        public static let tileSettleDuration: Double = tileSlideDuration + 0.3
 
         /// A control appearing or disappearing.
         public static let controls = Animation.easeInOut(duration: 0.2)
@@ -120,5 +169,7 @@ public enum Theme {
     public enum Opacity {
         /// The scrim behind a modal.
         public static let scrim: Double = 0.45
+        /// The wash over the board while it shows a message.
+        public static let boardOverlay: Double = 0.6
     }
 }
