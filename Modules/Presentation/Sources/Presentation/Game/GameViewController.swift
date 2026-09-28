@@ -5,7 +5,6 @@
 //  Created by Michał Wolanin on 26/09/2026.
 //
 
-import Domain
 import RxCocoa
 import RxSwift
 import UIKit
@@ -28,12 +27,12 @@ public final class GameViewController:
     public override func bindViewModel() {
         let input = GameViewModel.Input(
             moves: contract.moves,
+            keepPlayingRequests: contract.keepPlayingRequests,
+            restartRequests: contract.restartRequests,
             isActive: isActive.asObservable()
         )
 
-        let output = viewModel.transform(input)
-
-        output.state
+        viewModel.transform(input).state
             .drive(with: contract) { contract, state in
                 contract.apply(state: state)
             }

@@ -27,8 +27,12 @@ public struct GameView: View {
         // MARK: - Input
 
         private let moveRelay = PublishRelay<Direction>()
+        private let keepPlayingRelay = PublishRelay<Void>()
+        private let restartRelay = PublishRelay<Void>()
 
         public var moves: Observable<Direction> { moveRelay.asObservable() }
+        public var keepPlayingRequests: Observable<Void> { keepPlayingRelay.asObservable() }
+        public var restartRequests: Observable<Void> { restartRelay.asObservable() }
 
         public init(state: GameViewState = .empty(boardSize: 4)) {
             self.state = state
@@ -37,6 +41,10 @@ public struct GameView: View {
         func apply(state: GameViewState) { self.state = state }
 
         func move(_ direction: Direction) { moveRelay.accept(direction) }
+
+        func keepPlaying() { keepPlayingRelay.accept(()) }
+
+        func restart() { restartRelay.accept(()) }
     }
 
     @ObservedObject private var contract: Contract
@@ -48,50 +56,73 @@ public struct GameView: View {
     public var body: some View {
         let state = contract.state
 
-        VStack(spacing: Theme.Spacing.large) {
-            header(state)
-            hint(state)
-            BoardView(size: state.boardSize)
-                .layoutPriority(1)
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, Theme.Spacing.medium)
-        .padding(.top, Theme.Spacing.large)
-        .frame(maxWidth: Theme.Size.contentMaxWidth, maxHeight: .infinity)
-        .frame(maxWidth: .infinity)
-        .background(Theme.Colors.surface.ignoresSafeArea())
-        .contentShape(Rectangle())
-        .onSwipe(perform: contract.move)
+        BoardView(size: state.boardSize, tiles: state.tiles)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: "Plansza"))
+            .accessibilityValue(Text(verbatim: Self.description(of: state)))
+            .accessibilityAction(named: Self.actionName(.up)) { contract.move(.up) }
+            .accessibilityAction(named: Self.actionName(.down)) { contract.move(.down) }
+            .accessibilityAction(named: Self.actionName(.left)) { contract.move(.left) }
+            .accessibilityAction(named: Self.actionName(.right)) { contract.move(.right) }
+            .overlay {
+                if let overlay = state.overlay {
+                    message(for: overlay)
+                        .buttonStyle(.plain)
+                        .transition(Self.messageTransition)
+                }
+            }
+            .padding(Theme.Spacing.medium)
+            .frame(maxWidth: Theme.Size.contentMaxWidth, maxHeight: .infinity)
+            .frame(maxWidth: .infinity)
+            .background(Theme.Colors.surface.ignoresSafeArea())
+            .contentShape(Rectangle())
+            .onSwipe(perform: contract.move)
     }
 
     // MARK: - Sections
 
-    private func header(_ state: GameViewState) -> some View {
-        HStack(alignment: .center, spacing: Theme.Spacing.small) {
-            Text(verbatim: "2048")
-                .font(Theme.Typography.title)
-                .foregroundStyle(Theme.Colors.onSurface)
-                .accessibilityAddTraits(.isHeader)
-
-            Spacer(minLength: Theme.Spacing.small)
-
-            ScoreBadge(title: "Wynik", value: state.score)
-            ScoreBadge(title: "Rekord", value: state.bestScore)
+    @ViewBuilder
+    private func message(for overlay: GameViewState.Overlay) -> some View {
+        switch overlay {
+        case .won:
+            Button(action: contract.keepPlaying) {
+                BoardMessage(title: "2048!", caption: "Dotknij, aby grać dalej")
+            }
+        case .over(let score):
+            Button(action: contract.restart) {
+                BoardMessage(title: "Koniec gry", caption: "Wynik: \(score). Dotknij, aby zagrać ponownie")
+            }
         }
     }
 
-    private func hint(_ state: GameViewState) -> some View {
-        Text(verbatim: Self.description(of: state))
-            .font(Theme.Typography.label)
-            .foregroundStyle(Theme.Colors.onSurfaceMuted)
-            .frame(maxWidth: .infinity, alignment: .leading)
+    /// The message waits for the last move to play out, and leaves at once.
+    private static var messageTransition: AnyTransition {
+        .asymmetric(
+            insertion: .opacity.animation(Theme.Motion.controls.delay(Theme.Motion.tileSettleDuration)),
+            removal: .opacity.animation(Theme.Motion.controls)
+        )
     }
 
+    // MARK: - Accessibility
+
+    /// The board read row by row, for VoiceOver.
     private static func description(of state: GameViewState) -> String {
-        guard let lastMove = state.lastMove else {
-            return "Przesuń palcem w dowolną stronę."
+        var values: [Position: Int] = [:]
+        for tile in state.tiles where tile.kind != .absorbed {
+            values[tile.position] = tile.value
         }
-        return "Ruch \(state.moveCount): \(name(of: lastMove))."
+
+        return (0..<state.boardSize).map { row in
+            (0..<state.boardSize).map { column in
+                values[Position(row: row, column: column)].map { String($0) } ?? "puste"
+            }
+            .joined(separator: ", ")
+        }
+        .joined(separator: "; ")
+    }
+
+    private static func actionName(_ direction: Direction) -> Text {
+        Text(verbatim: "Przesuń \(name(of: direction))")
     }
 
     private static func name(of direction: Direction) -> String {
@@ -105,5 +136,5 @@ public struct GameView: View {
 }
 
 #Preview {
-    GameView(contract: .init())
+    GameView(contract: .init(state: GameViewState(game: GameSession(seed: 1).game, turn: nil)))
 }
