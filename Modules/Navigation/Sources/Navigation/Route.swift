@@ -11,6 +11,6 @@ import Foundation
 ///
 /// The enum lives here rather than in the screens, so this module depends on no
 /// feature and no cycle can appear in the package graph.
-public enum Route: Equatable, Hashable {
+public enum Route: Hashable, Sendable {
     case game
 }

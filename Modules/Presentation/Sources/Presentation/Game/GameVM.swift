@@ -5,6 +5,7 @@
 //  Created by Michał Wolanin on 26/09/2026.
 //
 
+import DesignSystem
 import Domain
 import Foundation
 import Navigation
@@ -13,18 +14,27 @@ import RxSwift
 
 /// The game screen's view model.
 ///
-/// The shape is the finished one: inputs merge into a stream of intents, a
-/// `scan` folds them into state, the state leaves as a `Driver`. Only the
-/// accumulator is a stand-in — it gives way to the domain's session reducer,
-/// and nothing around it has to move when it does.
+/// Intents fold into a `GameSession`; each result leaves as a
+/// `GameViewState`. A move that merges tiles is drawn twice: first with the
+/// merged-away tiles beneath the tile they became, then, once the move has
+/// played out, without them.
 public final class GameViewModel: ViewModel {
 
     public struct Input {
-        public let moves: Observable<Direction>
-        public let isActive: Observable<Bool>
+        /// A swipe, in the direction it points.
+        public let moves: Signal<Direction>
+        /// A decision taken while the game is paused.
+        public let flowActions: Signal<GameFlowAction>
+        /// Intents that arrive while the screen is inactive are dropped.
+        public let isActive: Driver<Bool>
 
-        public init(moves: Observable<Direction>, isActive: Observable<Bool>) {
+        public init(
+            moves: Signal<Direction>,
+            flowActions: Signal<GameFlowAction>,
+            isActive: Driver<Bool>
+        ) {
             self.moves = moves
+            self.flowActions = flowActions
             self.isActive = isActive
         }
     }
@@ -35,25 +45,80 @@ public final class GameViewModel: ViewModel {
 
     /// Held for routes beyond this screen; the game itself never navigates.
     private let navigator: any Navigator
-    private let boardSize: Int
+    private let session: GameSession
+    private let settleDelay: RxTimeInterval
+    private let scheduler: any SchedulerType
 
-    public init(navigator: any Navigator, boardSize: Int = 4) {
+    public init(
+        navigator: any Navigator,
+        session: GameSession = GameSession(seed: .random(in: .min ... .max)),
+        settleDelay: RxTimeInterval = .milliseconds(Int(Theme.Motion.tileSettleDuration * 1_000)),
+        scheduler: any SchedulerType = MainScheduler.instance
+    ) {
         self.navigator = navigator
-        self.boardSize = boardSize
+        self.session = session
+        self.settleDelay = settleDelay
+        self.scheduler = scheduler
     }
 
     public func transform(_ input: Input) -> Output {
-        let initial = GameViewState.empty(boardSize: boardSize)
+        let initial = Frame(session: session, turn: nil)
+        let settleDelay = settleDelay
+        let scheduler = scheduler
 
-        let state = input.moves
-            .scan(into: initial) { state, direction in
-                state.moveCount += 1
-                state.lastMove = direction
+        let intents = Observable<GameIntent>
+            .merge(
+                input.moves.asObservable().map(GameIntent.move),
+                input.flowActions.asObservable().map { GameIntent($0) }
+            )
+            .withLatestFrom(input.isActive.asObservable()) { intent, isActive in isActive ? intent : nil }
+            .compactMap { $0 }
+
+        let state = intents
+            .scan(into: initial) { frame, intent in
+                frame.turn = frame.session.apply(intent)
             }
             .startWith(initial)
+            .flatMapLatest { frame -> Observable<Frame> in
+                guard frame.needsSettling else { return .just(frame) }
+                return Observable.just(frame.settled)
+                    .delay(settleDelay, scheduler: scheduler)
+                    .startWith(frame)
+            }
+            .map { GameViewState(game: $0.session.game, turn: $0.turn) }
             .distinctUntilChanged()
             .asDriver(onErrorDriveWith: .empty())
 
         return Output(state: state)
+    }
+}
+
+private extension GameViewModel {
+
+    /// The session together with what its last intent did.
+    struct Frame {
+        var session: GameSession
+        var turn: Turn?
+
+        /// Whether the frame draws tiles that must go once the move has
+        /// played out.
+        var needsSettling: Bool {
+            turn.map { !$0.merges.isEmpty } ?? false
+        }
+
+        /// The same frame, drawn as if the move had played out.
+        var settled: Frame {
+            Frame(session: session, turn: nil)
+        }
+    }
+}
+
+private extension GameIntent {
+
+    init(_ action: GameFlowAction) {
+        switch action {
+        case .keepPlaying: self = .keepPlaying
+        case .restart: self = .restart
+        }
     }
 }

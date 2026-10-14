@@ -1,4 +1,4 @@
-// swift-tools-version: 6.3
+// swift-tools-version: 6.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -10,14 +10,12 @@ let package = Package(
         .library(name: "DesignSystem", targets: ["DesignSystem"]),
     ],
     dependencies: [
-        .package(path: "../Domain")
+        .package(path: "../Domain"),
     ],
     targets: [
         .target(
             name: "DesignSystem",
-            dependencies: [
-                "Domain"
-            ]
+            dependencies: ["Domain"]
         ),
     ],
     swiftLanguageModes: [.v6]
