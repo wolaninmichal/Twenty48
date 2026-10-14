@@ -85,12 +85,11 @@ struct BoardGridLayout: Layout {
     /// - Parameter proposal: The size proposed by the container view.
     /// - Returns: The smaller finite dimension of the proposal, or 320 points
     ///   if neither dimension constrains the grid.
-    private static func side(
-        fitting proposal: ProposedViewSize
-    ) -> CGFloat {
+    private static func side(fitting proposal: ProposedViewSize) -> CGFloat {
         let limits = [proposal.width, proposal.height]
             .compactMap { $0 }
             .filter(\.isFinite)
         return limits.min() ?? 320
     }
 }
+

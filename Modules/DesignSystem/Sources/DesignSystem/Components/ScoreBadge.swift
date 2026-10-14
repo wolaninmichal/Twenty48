@@ -26,15 +26,13 @@ public struct ScoreBadge: View {
     }
 
     public var body: some View {
-        VStack(spacing: 2) {
-            Text(title)
-                .font(Theme.Typography.caption)
-                .foregroundStyle(Theme.Colors.onSurfaceMuted)
+        VStack(spacing: Theme.Spacing.xSmall / 2) {
+            Text(verbatim: title)
+                .textStyle(.caption)
 
             // Verbatim, so the digits carry no grouping separator.
             Text(verbatim: String(value))
-                .font(Theme.Typography.score)
-                .foregroundStyle(Theme.Colors.onSurface)
+                .textStyle(.score)
                 .contentTransition(.numericText())
                 .animation(Theme.Motion.score, value: value)
         }

@@ -1,4 +1,4 @@
-// swift-tools-version: 6.3
+// swift-tools-version: 6.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -7,7 +7,7 @@ let package = Package(
     name: "Presentation",
     platforms: [.iOS(.v16)],
     products: [
-        .library(name: "Presentation", targets: ["Presentation"])
+        .library(name: "Presentation", targets: ["Presentation"]),
     ],
     dependencies: [
         .package(path: "../Domain"),
@@ -26,7 +26,7 @@ let package = Package(
                 .product(name: "RxCocoa", package: "RxSwift"),
                 .product(name: "RxRelay", package: "RxSwift"),
             ]
-        )
+        ),
     ],
     swiftLanguageModes: [.v6]
 )

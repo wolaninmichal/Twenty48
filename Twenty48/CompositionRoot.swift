@@ -9,8 +9,10 @@ import Navigation
 import Presentation
 import UIKit
 
+/// Builds every screen of the app. The only place that sees every module.
 @MainActor
 final class CompositionRoot: ScreenFactory {
+
     weak var navigator: Navigator?
 
     func makeViewController(for route: Route) -> UIViewController {
@@ -24,10 +26,8 @@ final class CompositionRoot: ScreenFactory {
         guard let navigator else {
             preconditionFailure("CompositionRoot used before its navigator was set")
         }
-        
+
         let vm: GameViewModel = .init(navigator: navigator)
-        let vc: GameViewController = .init(viewModel: vm)
-        
-        return vc
+        return GameViewController(vm: vm)
     }
 }

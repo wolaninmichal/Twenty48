@@ -30,6 +30,6 @@ struct TileIDGenerator: Equatable, Sendable {
 
     mutating func next() -> TileID {
         defer { upcoming += 1 }
-        return TileID(rawValue: upcoming)
+        return .init(rawValue: upcoming)
     }
 }

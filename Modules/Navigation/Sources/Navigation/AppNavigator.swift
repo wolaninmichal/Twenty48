@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  AppNavigator.swift
 //  Navigation
 //
 //  Created by Michał Wolanin on 26/09/2026.
@@ -7,14 +7,15 @@
 
 import UIKit
 
-/// A navigator backed by `UINavigationController` — the UIKit core of the app.
+/// A navigator backed by `UINavigationController`, the UIKit core of the app.
 @MainActor
 public final class AppNavigator: Navigator {
 
     /// Weak: the window owns the navigation controller.
     private weak var navigationController: UINavigationController?
 
-    /// Strong: the composition root has no other owner.
+    /// Strong: the navigator owns its factory, which holds the navigator
+    /// weakly in return.
     private let screenFactory: ScreenFactory
 
     public init(

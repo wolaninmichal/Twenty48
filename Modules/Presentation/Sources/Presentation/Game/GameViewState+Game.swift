@@ -8,28 +8,6 @@
 import DesignSystem
 import Domain
 
-/// One snapshot of everything the game screen draws.
-///
-/// A single `Equatable` value rather than a handful of `@Published`
-/// properties: the view can never be caught between two publishes, and the
-/// whole screen is reproducible from one value in a preview or a test.
-public struct GameViewState: Equatable, Sendable {
-
-    /// A message covering the board.
-    public enum Overlay: Equatable, Sendable {
-        case won
-        case over(score: Int)
-    }
-
-    public var boardSize: Int
-    public var tiles: [BoardTile]
-    public var overlay: Overlay?
-
-    public static func empty(boardSize: Int) -> GameViewState {
-        GameViewState(boardSize: boardSize, tiles: [], overlay: nil)
-    }
-}
-
 extension GameViewState {
 
     /// Draws a game.
@@ -60,12 +38,12 @@ extension GameViewState {
         self.init(
             boardSize: game.board.size,
             tiles: absorbed + onBoard,
-            overlay: Overlay(status: game.status, score: game.score)
+            message: Message(status: game.status, score: game.score)
         )
     }
 }
 
-private extension GameViewState.Overlay {
+private extension GameViewState.Message {
 
     init?(status: Game.Status, score: Int) {
         switch status {

@@ -14,30 +14,27 @@ import RxSwift
 
 /// The game screen's view model.
 ///
-/// Intents from the view merge into one stream, a `scan` folds them into the
-/// domain's `GameSession`, and the state leaves as a `Driver`.
-///
-/// A move that merges tiles is drawn twice: first with the merged-away tiles
-/// sliding beneath the tile they became, then, once the move has played out,
-/// without them. A new intent cancels a pending second drawing.
+/// Intents fold into a `GameSession`; each result leaves as a
+/// `GameViewState`. A move that merges tiles is drawn twice: first with the
+/// merged-away tiles beneath the tile they became, then, once the move has
+/// played out, without them.
 public final class GameViewModel: ViewModel {
 
     public struct Input {
-        public let moves: Observable<Direction>
-        public let keepPlayingRequests: Observable<Void>
-        public let restartRequests: Observable<Void>
+        /// A swipe, in the direction it points.
+        public let moves: Signal<Direction>
+        /// A decision taken while the game is paused.
+        public let flowActions: Signal<GameFlowAction>
         /// Intents that arrive while the screen is inactive are dropped.
-        public let isActive: Observable<Bool>
+        public let isActive: Driver<Bool>
 
         public init(
-            moves: Observable<Direction>,
-            keepPlayingRequests: Observable<Void>,
-            restartRequests: Observable<Void>,
-            isActive: Observable<Bool>
+            moves: Signal<Direction>,
+            flowActions: Signal<GameFlowAction>,
+            isActive: Driver<Bool>
         ) {
             self.moves = moves
-            self.keepPlayingRequests = keepPlayingRequests
-            self.restartRequests = restartRequests
+            self.flowActions = flowActions
             self.isActive = isActive
         }
     }
@@ -52,13 +49,6 @@ public final class GameViewModel: ViewModel {
     private let settleDelay: RxTimeInterval
     private let scheduler: any SchedulerType
 
-    /// Creates the view model.
-    ///
-    /// - Parameters:
-    ///   - navigator: The navigator of the app.
-    ///   - session: The session to start from.
-    ///   - settleDelay: How long a move takes to play out on screen.
-    ///   - scheduler: The scheduler that waits out `settleDelay`.
     public init(
         navigator: any Navigator,
         session: GameSession = GameSession(seed: .random(in: .min ... .max)),
@@ -78,11 +68,10 @@ public final class GameViewModel: ViewModel {
 
         let intents = Observable<GameIntent>
             .merge(
-                input.moves.map(GameIntent.move),
-                input.keepPlayingRequests.map { _ in .keepPlaying },
-                input.restartRequests.map { _ in .restart }
+                input.moves.asObservable().map(GameIntent.move),
+                input.flowActions.asObservable().map { GameIntent($0) }
             )
-            .withLatestFrom(input.isActive) { intent, isActive in isActive ? intent : nil }
+            .withLatestFrom(input.isActive.asObservable()) { intent, isActive in isActive ? intent : nil }
             .compactMap { $0 }
 
         let state = intents
@@ -120,6 +109,16 @@ private extension GameViewModel {
         /// The same frame, drawn as if the move had played out.
         var settled: Frame {
             Frame(session: session, turn: nil)
+        }
+    }
+}
+
+private extension GameIntent {
+
+    init(_ action: GameFlowAction) {
+        switch action {
+        case .keepPlaying: self = .keepPlaying
+        case .restart: self = .restart
         }
     }
 }

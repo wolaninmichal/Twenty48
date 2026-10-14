@@ -29,7 +29,12 @@ public struct BoardTile: Identifiable, Equatable, Sendable {
     public let position: Position
     public let kind: Kind
 
-    public init(id: TileID, value: Int, position: Position, kind: Kind = .resting) {
+    public init(
+        id: TileID,
+        value: Int,
+        position: Position,
+        kind: Kind = .resting
+    ) {
         self.id = id
         self.value = value
         self.position = position

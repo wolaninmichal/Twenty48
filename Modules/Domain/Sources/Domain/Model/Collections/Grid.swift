@@ -5,6 +5,7 @@
 //  Created by Michał Wolanin on 28/09/2026.
 //
 
+/// A square arrangement of elements, addressed by `Position`.
 public struct Grid<Element> {
 
     /// The number of cells along each edge.

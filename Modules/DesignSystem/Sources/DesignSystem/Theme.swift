@@ -8,6 +8,8 @@
 import SwiftUI
 
 /// The visual constants the app is drawn with.
+///
+/// Text styles live in `Theme.TextStyle`, applied with `textStyle(_:color:)`.
 public enum Theme {
 
     /// Colors, named for the role they play rather than the shade they are.
@@ -75,24 +77,6 @@ public enum Theme {
                 blue: Double(hex & 0xFF) / 255
             )
         }
-    }
-
-    /// Text styles.
-    public enum Typography {
-        /// The name of the screen.
-        public static let title = Font.system(size: 44, weight: .heavy, design: .rounded)
-        /// The heading of a panel.
-        public static let headline = Font.system(.title2, design: .rounded).weight(.bold)
-        /// A number that changes, such as the score.
-        public static let score = Font.system(.title3, design: .rounded).weight(.bold).monospacedDigit()
-        /// The value of a tile. Shrinks to fit its cell.
-        public static let tile = Font.system(size: 34, weight: .heavy, design: .rounded)
-        /// The title of a button.
-        public static let button = Font.system(.body, design: .rounded).weight(.semibold)
-        /// Supporting text.
-        public static let label = Font.system(.footnote, design: .rounded)
-        /// The smallest text, such as the label of a badge.
-        public static let caption = Font.system(.caption, design: .rounded)
     }
 
     /// Distances between elements, in points.

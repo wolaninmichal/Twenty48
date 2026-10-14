@@ -5,37 +5,45 @@
 //  Created by Michał Wolanin on 26/09/2026.
 //
 
+import DesignSystem
+import Domain
 import RxCocoa
 import RxSwift
-import UIKit
 
-public final class GameViewController:
-    ScreenViewController<GameViewModel, GameView> {
+/// The game screen: binds `GameViewModel` to `GameView`.
+public final class GameViewController: SwiftUIViewController<GameView> {
 
-    private let contract: GameView.Contract
+    private let vm: GameViewModel
 
-    public init(viewModel: GameViewModel) {
-        let contract = GameView.Contract()
-        self.contract = contract
-        super.init(
-            viewModel: viewModel,
-            title: "2048",
-            rootView: GameView(contract: contract)
-        )
+    public init(vm: GameViewModel) {
+        self.vm = vm
+        super.init()
     }
 
-    public override func bindViewModel() {
-        let input = GameViewModel.Input(
-            moves: contract.moves,
-            keepPlayingRequests: contract.keepPlayingRequests,
-            restartRequests: contract.restartRequests,
-            isActive: isActive.asObservable()
-        )
+    public override func bindVM() {
+        let output = vm.transform(.init(
+            moves: actions.compactMap(\.move),
+            flowActions: actions.compactMap(\.flowAction),
+            isActive: isActive
+        ))
 
-        viewModel.transform(input).state
-            .drive(with: contract) { contract, state in
-                contract.apply(state: state)
-            }
+        output.state
+            .drive(state)
             .disposed(by: disposeBag)
+    }
+}
+
+private extension GameViewAction {
+
+    var move: Direction? {
+        if case .move(let direction) = self { direction } else { nil }
+    }
+
+    var flowAction: GameFlowAction? {
+        switch self {
+        case .move: nil
+        case .keepPlaying: .keepPlaying
+        case .restart: .restart
+        }
     }
 }

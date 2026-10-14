@@ -17,10 +17,7 @@ struct TileView: View {
             .fill(Theme.Colors.tile(value))
             .overlay {
                 Text(verbatim: String(value))
-                    .font(Theme.Typography.tile)
-                    .foregroundStyle(Theme.Colors.onTile(value))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.3)
+                    .textStyle(.tile, color: Theme.Colors.onTile(value))
                     .padding(Theme.Spacing.xSmall)
             }
     }

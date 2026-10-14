@@ -13,5 +13,5 @@ import SwiftUI
 /// Attach it with `layoutValue(key:value:)`. A subview that omits the value
 /// occupies the top-left cell.
 struct BoardCell: LayoutValueKey {
-    static let defaultValue = Position(row: 0, column: 0)
+    static let defaultValue: Position = .init(row: 0, column: 0)
 }

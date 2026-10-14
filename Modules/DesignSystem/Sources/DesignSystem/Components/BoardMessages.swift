@@ -29,14 +29,10 @@ public struct BoardMessage: View {
     public var body: some View {
         VStack(spacing: Theme.Spacing.small) {
             Text(verbatim: title)
-                .font(Theme.Typography.title)
-                .foregroundStyle(Theme.Colors.onSurface)
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
+                .textStyle(.title)
 
             Text(verbatim: caption)
-                .font(Theme.Typography.label)
-                .foregroundStyle(Theme.Colors.onSurfaceMuted)
+                .textStyle(.label)
         }
         .multilineTextAlignment(.center)
         .padding(Theme.Spacing.large)
